@@ -1191,7 +1191,7 @@ static int sg_init(struct ape_dev *ape)
 	} else {
 		printk(KERN_DEBUG "Allocated DMA Buffer, PAGE_SIZE * %d\n", ape->page_num);
 		ape_chdma_desc_set(&ape->table_virt->desc[0], ape->buffer_bus, (u32)ape->bar[0], PAGE_SIZE*ape->step);
-		for (i=0; i < (ape->page_num/4); i++) {
+		for (i=0; i < (ape->page_num/ape->step); i++) {
 			ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus + PAGE_SIZE*ape->step, \
 					(u32)ape->bar[0] + PAGE_SIZE*ape->step, PAGE_SIZE*ape->step);
 		}
