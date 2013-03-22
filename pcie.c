@@ -17,28 +17,6 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- *
- * Rationale: This driver exercises the chaining DMA read and write engine
- * in the reference design. It is meant as a complementary reference
- * driver that can be used for testing early designs as well as a basis to
- * write your custom driver.
- *
- * Status: Test results from Leon Woestenberg  <leon.woestenberg@axon.tv>:
- *
- * Sendero Board w/ Cyclone II EP2C35F672C6N, PX1011A PCIe x1 PHY on a
- * Dell Precision 370 PC, x86, kernel 2.6.20 from Ubuntu 7.04.
- *
- * Sendero Board w/ Cyclone II EP2C35F672C6N, PX1011A PCIe x1 PHY on a
- * Freescale MPC8313E-RDB board, PowerPC, 2.6.24 w/ Freescale patches.
- *
- * Driver tests passed with PCIe Compiler 8.1. With PCIe 8.0 the DMA
- * loopback test had reproducable compare errors. I assume a change
- * in the compiler or reference design, but could not find evidence nor
- * documentation on a change or fix in that direction.
- *
- * The reference design does not have readable locations and thus a
- * dummy read, used to flush PCI posted writes, cannot be performed.
- *
  */
 
 #include <linux/module.h>
