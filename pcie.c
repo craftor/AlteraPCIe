@@ -1,8 +1,7 @@
 /**
  * Driver for Altera PCIe core chaining DMA reference design.
  *
- * Copyright (C) 2008 Leon Woestenberg  <leon.woestenberg@axon.tv>
- * Copyright (C) 2008 Nickolas Heppermann  <heppermannwdt@gmail.com>
+ * Copyright (C) 2013 Craftor <craftor0924@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
