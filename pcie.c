@@ -984,13 +984,13 @@ static ssize_t sg_read(struct file *file, char __user *buf, size_t count, loff_t
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	if (ape->msi_enabled)
-		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
-
-	n = ape->page_num / ape->step;
+	n = 16;
 	/* set available number of descriptors in table */
 	w = (u32)(n + 1);
 	w |= (1UL << 18)/*global EPLAST_EN*/;
+
+	if (ape->msi_enabled)
+		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
 
 	printk(KERN_DEBUG "writing 0x%08x to 0x%p\n", w, (void *)&read_header->w0);
 	iowrite32(w, &read_header->w0);
@@ -1037,7 +1037,7 @@ static ssize_t sg_read(struct file *file, char __user *buf, size_t count, loff_t
 	wmb();
 
 	// Move data to user space
-	copy_to_user(buf, ape->buffer_virt, PAGE_SIZE*ape->page_num);
+	copy_to_user(buf, ape->buffer_virt, PAGE_SIZE*16);
 
 	goto end;
 
@@ -1045,7 +1045,7 @@ fail:
 	printk(KERN_DEBUG "DMA Read Failed...\n");
 	return 0;
 end:
-	return PAGE_SIZE * ape->page_num;
+	return PAGE_SIZE * 16;
 }
 
 /* sg_write() - Write to the device
@@ -1083,19 +1083,20 @@ static ssize_t sg_write(struct file *file, const char __user *buf, size_t count,
 		(u64)ape->buffer_virt, (u64)ape->buffer_bus);
 
 	// Get data from user space
-	copy_from_user(ape->buffer_virt, buf, PAGE_SIZE*ape->page_num);
+	copy_from_user(ape->buffer_virt, buf, PAGE_SIZE*16);
 
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	if (ape->msi_enabled)
-		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
 
-	n = ape->page_num / ape->step;
+	n = 16;
 	/* set number of available descriptors in the table */
 	w = (u32)(n + 1);
 	/* enable updates of eplast for each descriptor completion */
 	w |= (u32)(1UL << 18)/*global EPLAST_EN*/;
+	
+	if (ape->msi_enabled)
+		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
 
 	printk(KERN_DEBUG "writing 0x%08x to 0x%p\n", w, (void *)&write_header->w0);
 	iowrite32(w, &write_header->w0);
@@ -1182,13 +1183,18 @@ static int sg_init(struct ape_dev *ape)
 	}
 
 	// Allocate DMA buffer
+<<<<<<< HEAD
 	ape->page_num = 256;
 	//ape->step = 16;
 	ape->buffer_virt = (u8 *)pci_alloc_consistent(ape->pci_dev, PAGE_SIZE * ape->page_num, &ape->buffer_bus);
+=======
+	ape->buffer_virt = (u8 *)pci_alloc_consistent(ape->pci_dev, PAGE_SIZE*16, &ape->buffer_bus);
+>>>>>>> 3d248e5f8390f84f86c721cd73fbf31c3de999f9
 	if (!ape->buffer_virt) {
-		printk(KERN_DEBUG "Could not allocate DMA buffer, PAGE_SIZE * %d\n", ape->page_num);
+		printk(KERN_DEBUG "Could not allocate DMA buffer.\n");
 		goto fail_allocate;
 	} else {
+<<<<<<< HEAD
 		printk(KERN_DEBUG "Allocated DMA Buffer, PAGE_SIZE * %d\n", ape->page_num);
 		//ape_chdma_desc_set(&ape->table_virt->desc[0], ape->buffer_bus, (u32)ape->bar[0], PAGE_SIZE*ape->step);
 		for (i=0; i < (ape->page_num/4); i++) {
@@ -1196,6 +1202,11 @@ static int sg_init(struct ape_dev *ape)
 
 			printk(KERN_DEBUG "Desc[%-2d] - RC:0x%016llx bar:0x%08x Size:%dKB",
 						i, (u64)(ape->buffer_bus + i*PAGE_SIZE*4), (u32)(ape->bar[0]+i*PAGE_SIZE*4), (u32)(PAGE_SIZE*4)/1024);
+=======
+		for (i=0; i < 16; i++) {
+			ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus + PAGE_SIZE*16, \
+				(u32)ape->bar[0] + PAGE_SIZE*16, PAGE_SIZE*16);
+>>>>>>> 3d248e5f8390f84f86c721cd73fbf31c3de999f9
 		}
 	}
 
