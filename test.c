@@ -29,7 +29,7 @@ int main()
 
 	//write(fd,buf,sizeof(buf));
 
-	for (i=0; i< 65535; i++) {
+	for (i=0; i< 10; i++) {
 		printf("Test Time %-6d : ",i);
 		gettimeofday (&tv, NULL);
 		start_time = tv.tv_usec;
@@ -39,7 +39,7 @@ int main()
 
 		//printf("stop time is %lld\n",stop_time);
 		//printf("start time is %lld\n",start_time);
-		speed = 0.5*1000*1000/(stop_time - start_time);
+		speed = 1*1000*1000/(stop_time - start_time);
 		printf("Write Speed = %-8.2f MB/s | ",speed);
 
 		offset = lseek(fd, 0, SEEK_SET);
@@ -54,7 +54,7 @@ int main()
 		speed = 0.5*1000*1000/(stop_time - start_time);
 		printf("Read Speed = %-8.2f MB/s \n",speed);
 
-		usleep(1000*10);
+		usleep(1000*100);
 	}
 	/*
 	for(i=0; i<BUF_SIZE; i++)
