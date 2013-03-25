@@ -78,7 +78,7 @@
  * @see ug_pci_express 8.0, table 7-2 at page 7-13.
  */
 static const unsigned long bar_min_len[APE_BAR_NUM] =
-	{ 1048576, 1048576, 1048576, 0, 0, 0 };
+	{ 1024*1024, 1024*1024, 1024*1024, 0, 0, 0 };
 
 /**
  * Descriptor Header, controls the DMA read engine or write engine.
@@ -984,13 +984,16 @@ static ssize_t sg_read(struct file *file, char __user *buf, size_t count, loff_t
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	if (ape->msi_enabled)
-		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
-
-	n = ape->page_num / ape->step;
+	for (i=0; i<32; i++) {
+		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*8, (u32)ape->bar[0]+PAGE_SIZE*8, PAGE_SIZE*8);
+	}
+	n = i-1;
 	/* set available number of descriptors in table */
 	w = (u32)(n + 1);
 	w |= (1UL << 18)/*global EPLAST_EN*/;
+
+	if (ape->msi_enabled)
+		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
 
 	printk(KERN_DEBUG "writing 0x%08x to 0x%p\n", w, (void *)&read_header->w0);
 	iowrite32(w, &read_header->w0);
@@ -1037,7 +1040,7 @@ static ssize_t sg_read(struct file *file, char __user *buf, size_t count, loff_t
 	wmb();
 
 	// Move data to user space
-	copy_to_user(buf, ape->buffer_virt, PAGE_SIZE*ape->page_num);
+	copy_to_user(buf, (void *)ape->buffer_virt, PAGE_SIZE*ape->page_num);
 
 	goto end;
 
@@ -1083,19 +1086,22 @@ static ssize_t sg_write(struct file *file, const char __user *buf, size_t count,
 		(u64)ape->buffer_virt, (u64)ape->buffer_bus);
 
 	// Get data from user space
-	copy_from_user(ape->buffer_virt, buf, PAGE_SIZE*ape->page_num);
+	copy_from_user((void *)ape->buffer_virt, buf, PAGE_SIZE*ape->page_num);
 
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	if (ape->msi_enabled)
-		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
-
-	n = ape->page_num / ape->step;
+	for (i=0; i<32; i++) {
+		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*8, (u32)ape->bar[0]+PAGE_SIZE*8, PAGE_SIZE*8);
+	}
+	n = i-1;
 	/* set number of available descriptors in the table */
 	w = (u32)(n + 1);
 	/* enable updates of eplast for each descriptor completion */
 	w |= (u32)(1UL << 18)/*global EPLAST_EN*/;
+	
+	if (ape->msi_enabled)
+		ape->table_virt->desc[n].w0 |= cpu_to_le32(1UL << 16)/*local MSI*/;
 
 	printk(KERN_DEBUG "writing 0x%08x to 0x%p\n", w, (void *)&write_header->w0);
 	iowrite32(w, &write_header->w0);
@@ -1128,6 +1134,9 @@ static ssize_t sg_write(struct file *file, const char __user *buf, size_t count,
 		}
 		udelay(100);
 	}
+
+	printk(KERN_DEBUG "---------- DMA Write End ----------\n");
+
 	/* soft-reset DMA write engine */
 	iowrite32(0x0000ffffUL, &write_header->w0);
 
@@ -1161,7 +1170,7 @@ static struct file_operations sg_fops = {
 static int sg_init(struct ape_dev *ape)
 {
 	int rc;
-	unsigned int i;
+	//unsigned int i;
 
 	printk(KERN_DEBUG DRV_NAME " sg_init()\n");
 	/* allocate a dynamically allocated character device node */
@@ -1183,20 +1192,11 @@ static int sg_init(struct ape_dev *ape)
 
 	// Allocate DMA buffer
 	ape->page_num = 256;
-	//ape->step = 16;
-	ape->buffer_virt = (u8 *)pci_alloc_consistent(ape->pci_dev, PAGE_SIZE * ape->page_num, &ape->buffer_bus);
-	if (!ape->buffer_virt) {
-		printk(KERN_DEBUG "Could not allocate DMA buffer, PAGE_SIZE * %d\n", ape->page_num);
-		goto fail_allocate;
-	} else {
-		printk(KERN_DEBUG "Allocated DMA Buffer, PAGE_SIZE * %d\n", ape->page_num);
-		//ape_chdma_desc_set(&ape->table_virt->desc[0], ape->buffer_bus, (u32)ape->bar[0], PAGE_SIZE*ape->step);
-		for (i=0; i < (ape->page_num/4); i++) {
-			ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus + i*PAGE_SIZE*4, ape->bar[0]+i*PAGE_SIZE*4, PAGE_SIZE*4);
+	ape->buffer_virt = (u8 *)pci_alloc_consistent(ape->pci_dev, PAGE_SIZE*ape->page_num, &ape->buffer_bus);
 
-			printk(KERN_DEBUG "Desc[%-2d] - RC:0x%016llx bar:0x%08x Size:%dKB",
-						i, (u64)(ape->buffer_bus + i*PAGE_SIZE*4), (u32)(ape->bar[0]+i*PAGE_SIZE*4), (u32)(PAGE_SIZE*4)/1024);
-		}
+	if (!ape->buffer_virt) {
+		printk(KERN_DEBUG "Could not allocate DMA buffer.\n");
+		goto fail_allocate;
 	}
 
 	printk(KERN_DEBUG "altpciechdma = %d:%d\n", MAJOR(ape->cdevno), MINOR(ape->cdevno));
@@ -1222,7 +1222,7 @@ static void sg_exit(struct ape_dev *ape)
 
 	// free the DMA buffer
 	if (ape->buffer_virt) {
-		pci_free_consistent(ape->pci_dev, ape->page_num * PAGE_SIZE, ape->buffer_virt, ape->buffer_bus);
+		pci_free_consistent(ape->pci_dev, PAGE_SIZE*ape->page_num, ape->buffer_virt, ape->buffer_bus);
 	}
 	/* remove the character device */
 	cdev_del(&ape->cdev);

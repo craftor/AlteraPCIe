@@ -1,10 +1,12 @@
 #! /bin/sh
-echo Make Clean
+echo ">>Clear Log"
+cat /dev/null > /var/log/syslog
+echo ">>Make Clean"
 make clean
-echo Make
+echo ">>Make"
 make
-echo rmmod
+echo ">>rmmod"
 sudo rmmod pcie.ko
-echo insmod
+echo ">>insmod"
 sudo insmod pcie.ko
 
