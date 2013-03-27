@@ -984,8 +984,8 @@ static ssize_t sg_read(struct file *file, char __user *buf, size_t count, loff_t
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	for (i=0; i<32; i++) {
-		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*8, (u32)ape->bar[0]+PAGE_SIZE*8, PAGE_SIZE*8);
+	for (i=0; i<16; i++) {
+		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*16, (u32)ape->bar[0]+PAGE_SIZE*16, PAGE_SIZE*16);
 	}
 	n = i-1;
 	/* set available number of descriptors in table */
@@ -1091,8 +1091,8 @@ static ssize_t sg_write(struct file *file, const char __user *buf, size_t count,
 	/* invalidate EPLAST, outside 0-255, 0xFADE is from the testbench */
 	ape->table_virt->w3 = cpu_to_le32(0x0000FADE);
 
-	for (i=0; i<32; i++) {
-		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*8, (u32)ape->bar[0]+PAGE_SIZE*8, PAGE_SIZE*8);
+	for (i=0; i<16; i++) {
+		ape_chdma_desc_set(&ape->table_virt->desc[i], ape->buffer_bus+PAGE_SIZE*16, (u32)ape->bar[0]+PAGE_SIZE*16, PAGE_SIZE*16);
 	}
 	n = i-1;
 	/* set number of available descriptors in the table */
