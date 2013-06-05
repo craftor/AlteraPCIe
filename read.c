@@ -7,7 +7,7 @@
 
 #define BUF_SIZE 4096*256
 
-int main()
+int main(int argc, char **argv)
 {
 	int fd;
 	unsigned char buf[BUF_SIZE] = {0};
@@ -17,8 +17,8 @@ int main()
 	long long start_time,stop_time;
 	off_t offset;
 	float speed;
-
 	int fout;
+	int read_times;
 
 	for(i=0; i<BUF_SIZE; i++) {
 		buf[i] = i/4096;
@@ -30,7 +30,14 @@ int main()
 	  return 0;
 	}
 
-	for(i=0;i<10;i++) {
+	if (argv[1]) {
+		read_times = atol(argv[1]);
+	}else{
+		printf("Usage: ./read 10\n");
+		return 0;
+	}
+
+	for(i=0;i<read_times;i++) {
 		offset = lseek(fd, 0, SEEK_SET);
 		gettimeofday(&tv, NULL);
 		start_time = tv.tv_usec;
