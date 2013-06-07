@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 		stop_time = tv.tv_usec;
 
 		speed = BUF_SIZE*0.9536/(stop_time - start_time);
-		printf("RD Speed = %-4.2f MB/s \n",speed);
+		printf("No.%d | RD Speed = %-4.2f MB/s \n", i, speed);
 
 		usleep(1000*100);
 	}
